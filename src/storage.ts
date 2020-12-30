@@ -2,6 +2,7 @@ import Datastore from 'nedb';
 import crypto from 'crypto';
 import { config } from 'dotenv';
 
+
 config();
 
 const SECOND = 1000;
@@ -11,7 +12,21 @@ const DAY = 24 * HOUR;
 
 const CompactionTimeout = 10 * SECOND;
 
-const limitUnit = eval(String(process.env.LIMIT_UNIT)) || DAY;
+// const limitUnit = eval(String(process.env.LIMIT_UNIT)) || DAY;
+
+
+export interface MultiSigWallet {
+    address: string | undefined,
+    signature: string | undefined,
+    signer: string | undefined,
+    signitories: string[],
+    method: string,
+    callHash: string | undefined,
+    maxWeight: string | undefined,
+    threshold: string | undefined,
+    tip: string | undefined,
+    maybeTimePoint: any
+}
 
 const now = () => new Date().getTime();
 const sha256 = (x: any) =>
@@ -41,33 +56,39 @@ class Storage {
         });
     }
 
-    async isValid(sender: any, address: any, chain: any, limit = 2, span = limitUnit) { // defaults to 2 per day limit
-        sender = sha256(sender);
-        address = sha256(address);
-        chain = sha256(chain);
-
-        const totalUsername: any = await this._query(sender, address, chain, span);
-        if (totalUsername < limit) {
-            return true;
-        }
-
-        return false;
-    }
-
-    async saveData(_sender: any, _address: any, _chain: any) {
-        _sender = sha256(_sender);
-        _address = sha256(_address);
-        _chain = sha256(_chain);
-
-        await this._insert({ sender: _sender, address: _address, chain: _chain });
+    async saveApproveAsMulti_NewMultisig(_wallet: MultiSigWallet) {
+        await this._insert({
+            address: _wallet.address,
+            signature: _wallet.signature,
+            signer: _wallet.signer,
+            signitories: _wallet.signitories,
+            method: _wallet.method,
+            callHash: _wallet.callHash,
+            maxWeight: _wallet.maxWeight,
+            threshold: _wallet.threshold,
+            tip: _wallet.tip,
+            maybeTimePoint: _wallet.maybeTimePoint
+        });
         return true;
     }
 
-    async _insert(item: any) {
-        const timestamp = now();
+    async queryApproveAsMulti_NewMultisig(address: any) {
+        const created_at = now();
+        // const item = { address }
+        const query = { "item.address": address };
 
+        return new Promise((resolve, reject) => {
+            this._db.find(query, (err: any, docs: string | any[]) => {
+                if (err) reject();
+                resolve(docs);
+            });
+        });
+    }
+
+    async _insert(item: any) {
+        const created_at = now();
         return new Promise<void>((resolve, reject) => {
-            this._db.insert({ item, timestamp }, (err) => {
+            this._db.insert({ item, created_at }, (err) => {
                 if (err) reject(err);
                 resolve();
             });
@@ -75,12 +96,12 @@ class Storage {
     }
 
     async _query(sender: any, address: any, chain: any, span: number) {
-        const timestamp = now();
+        const created_at = now();
         const item = { sender, address, chain }
         const query = {
             $and: [
                 { item },
-                { timestamp: { $gt: timestamp - span } },
+                { created_at: { $gt: created_at - span } },
             ],
         };
 
