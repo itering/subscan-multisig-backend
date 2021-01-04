@@ -12,20 +12,31 @@ const DAY = 24 * HOUR;
 
 const CompactionTimeout = 10 * SECOND;
 
-// const limitUnit = eval(String(process.env.LIMIT_UNIT)) || DAY;
-
-
-export interface MultiSigWallet {
+export interface IApproveAsMulti_MultiSigWallet {
     address: string | undefined,
     signature: string | undefined,
     signer: string | undefined,
     signitories: string[],
     method: string,
+    eventType: string,
     callHash: string | undefined,
     maxWeight: string | undefined,
     threshold: string | undefined,
     tip: string | undefined,
     maybeTimePoint: any
+}
+
+export interface ICancelAsMulti_MultiSigWallet {
+    address: string | undefined,
+    signature: string | undefined,
+    signer: string | undefined,
+    signitories: string[],
+    method: string,
+    eventType: string,
+    callHash: string | undefined,
+    threshold: string | undefined,
+    tip: string | undefined,
+    timepoint: any
 }
 
 const now = () => new Date().getTime();
@@ -56,13 +67,15 @@ class Storage {
         });
     }
 
-    async saveApproveAsMulti_NewMultisig(_wallet: MultiSigWallet) {
+    //NOTE: callName_EventName
+    async saveApproveAsMulti_NewMultisig(_wallet: IApproveAsMulti_MultiSigWallet) {
         await this._insert({
             address: _wallet.address,
             signature: _wallet.signature,
             signer: _wallet.signer,
             signitories: _wallet.signitories,
             method: _wallet.method,
+            eventType: _wallet.eventType,
             callHash: _wallet.callHash,
             maxWeight: _wallet.maxWeight,
             threshold: _wallet.threshold,
@@ -72,9 +85,23 @@ class Storage {
         return true;
     }
 
-    async queryApproveAsMulti_NewMultisig(address: any) {
-        const created_at = now();
-        // const item = { address }
+    async saveCancelAsMulti_MultisigCancelled(_wallet: ICancelAsMulti_MultiSigWallet) {
+        await this._insert({
+            address: _wallet.address,
+            signature: _wallet.signature,
+            signer: _wallet.signer,
+            signitories: _wallet.signitories,
+            method: _wallet.method,
+            eventType: _wallet.eventType,
+            callHash: _wallet.callHash,
+            threshold: _wallet.threshold,
+            tip: _wallet.tip,
+            timepoint: _wallet.timepoint
+        });
+        return true;
+    }
+
+    async query(address: any) {
         const query = { "item.address": address };
 
         return new Promise((resolve, reject) => {
