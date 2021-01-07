@@ -36,7 +36,21 @@ export interface ICancelAsMulti_MultiSigWallet {
     callHash: string | undefined,
     threshold: string | undefined,
     tip: string | undefined,
-    timepoint: any
+    timepoint?: any
+}
+
+export interface IAsMulti_MultiSigWallet {
+    address: string | undefined,
+    signature: string | undefined,
+    signer: string | undefined,
+    signitories: string[],
+    method: string,
+    eventType: string,
+    callHash: string | undefined,
+    threshold: string | undefined,
+    tip: string | undefined,
+    maybeTimepoint: any,
+    maxWeight: any
 }
 
 const now = () => new Date().getTime();
@@ -85,7 +99,7 @@ class Storage {
         return true;
     }
 
-    async saveCancelAsMulti_MultisigCancelled(_wallet: ICancelAsMulti_MultiSigWallet) {
+    async saveCancelAsMulti_MultisigCancelled(_wallet:ICancelAsMulti_MultiSigWallet ) {
         await this._insert({
             address: _wallet.address,
             signature: _wallet.signature,
@@ -97,6 +111,23 @@ class Storage {
             threshold: _wallet.threshold,
             tip: _wallet.tip,
             timepoint: _wallet.timepoint
+        });
+        return true;
+    }
+
+    async saveAsMulti_NewMultisig_MultisigExecuted(_wallet: IAsMulti_MultiSigWallet) {
+        await this._insert({
+            address: _wallet.address,
+            signature: _wallet.signature,
+            signer: _wallet.signer,
+            signitories: _wallet.signitories,
+            method: _wallet.method,
+            eventType: _wallet.eventType,
+            callHash: _wallet.callHash,
+            threshold: _wallet.threshold,
+            tip: _wallet.tip,
+            maybeTimepoint: _wallet.maybeTimepoint,
+            maxWeight: _wallet.maxWeight
         });
         return true;
     }
