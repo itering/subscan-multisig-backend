@@ -13,42 +13,43 @@ const DAY = 24 * HOUR;
 const CompactionTimeout = 10 * SECOND;
 
 export interface IApproveAsMulti_MultiSigWallet {
-    address: string | undefined,
-    signature: string | undefined,
-    signer: string | undefined,
+    address: string,
+    signature: string,
+    signer: string,
     signitories: string[],
     method: string,
     eventType: string,
-    callHash: string | undefined,
-    maxWeight: string | undefined,
-    threshold: string | undefined,
-    tip: string | undefined,
+    callHash: string,
+    maxWeight: string,
+    threshold: string,
+    tip: string,
     maybeTimePoint: any
 }
 
 export interface ICancelAsMulti_MultiSigWallet {
-    address: string | undefined,
-    signature: string | undefined,
-    signer: string | undefined,
+    address: string,
+    signature: string,
+    signer: string,
     signitories: string[],
     method: string,
     eventType: string,
-    callHash: string | undefined,
-    threshold: string | undefined,
-    tip: string | undefined,
+    callHash: string,
+    threshold: string,
+    tip: string,
     timepoint?: any
 }
 
 export interface IAsMulti_MultiSigWallet {
-    address: string | undefined,
-    signature: string | undefined,
-    signer: string | undefined,
+    address: string,
+    signature: string,
+    signer: string,
     signitories: string[],
     method: string,
     eventType: string,
-    callHash: string | undefined,
-    threshold: string | undefined,
-    tip: string | undefined,
+    callHash: string,
+    callData: string,
+    threshold: string,
+    tip: string,
     maybeTimepoint: any,
     maxWeight: any
 }

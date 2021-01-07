@@ -6,6 +6,7 @@ import { IAsMulti_MultiSigWallet, IApproveAsMulti_MultiSigWallet, ICancelAsMulti
 config();
 const NETWORK_WEBSOCKET = process.env.NETWORK_WEBSOCKET || 'wss://cc1-1.polkadot.network/';
 const provider = new WsProvider(NETWORK_WEBSOCKET);
+import { blake2AsHex } from '@polkadot/util-crypto';
 
 export async function runCrawlers() {
     const storage = new Storage();
@@ -54,18 +55,18 @@ export async function runCrawlers() {
 
             if (tempMultiSigRecord.length != 0) {
                 let multisigDBRecord: IApproveAsMulti_MultiSigWallet = {
-                    address: tempMultiSigRecord[0].event.data[addressIndex].toHuman()?.toString(),
-                    signature: singleEx.signature.toHuman()?.toString(),
-                    signer: singleEx.signer.toHuman()?.toString(),
+                    address: tempMultiSigRecord[0].event.data[addressIndex].toHuman()?.toString()!,
+                    signature: singleEx.signature.toHuman()?.toString()!,
+                    signer: singleEx.signer.toHuman()?.toString()!,
                     signitories: (singleEx.method.args[1] as any).map((signitory) => {
                         return String(signitory.toHuman())
                     }),
                     method: singleEx.method.method,
                     eventType,
-                    callHash: singleEx.method.args[3].toHuman()?.toString(),
-                    maxWeight: singleEx.method.args[4].toHuman()?.toString(),
-                    threshold: singleEx.method.args[0].toHuman()?.toString(),
-                    tip: singleEx.tip.toHuman()?.toString(),
+                    callHash: singleEx.method.args[3].toHuman()?.toString()!,
+                    maxWeight: singleEx.method.args[4].toHuman()?.toString()!,
+                    threshold: singleEx.method.args[0].toHuman()?.toString()!,
+                    tip: singleEx.tip.toHuman()?.toString()!,
                     maybeTimePoint: singleEx.method.args[2].toHuman()
                 };
                 console.log('Saving in DB: ', multisigDBRecord)
@@ -84,18 +85,20 @@ export async function runCrawlers() {
         asMulti && asMulti.map(async (singleEx) => {
             singleEx.events.map((singleEvent) => {
                 if (singleEvent.section == 'multisig') {
+                    // let hash = blake2AsHex(singleEx.extrinsic.method.args[3].toHuman()?.toString()!);
                     let multisigDBRecord: IAsMulti_MultiSigWallet = {
-                        address: singleEvent.method == 'MultisigExecuted' ? singleEvent.data[2].toHuman()?.toString() : singleEvent.data[1].toHuman()?.toString(),
-                        signature: singleEx.extrinsic.signature.toHuman()?.toString(),
-                        signer: singleEx.extrinsic.signer.toHuman()?.toString(),
+                        address: singleEvent.method == 'MultisigExecuted' ? singleEvent.data[2].toHuman()?.toString()! : singleEvent.data[1].toHuman()?.toString()!,
+                        signature: singleEx.extrinsic.signature.toHuman()?.toString()!,
+                        signer: singleEx.extrinsic.signer.toHuman()?.toString()!,
                         signitories: (singleEx.extrinsic.method.args[1] as any).map((signitory) => {
                             return String(signitory.toHuman())
                         }),
                         method: singleEx.extrinsic.method.method,
                         eventType: singleEvent.method == 'MultisigExecuted' ? 'MultisigExecuted' : 'NewMultisig',
-                        callHash: singleEx.extrinsic.method.args[3].toHuman()?.toString(),
-                        threshold: singleEx.extrinsic.method.args[0].toHuman()?.toString(),
-                        tip: singleEx.extrinsic.tip.toHuman()?.toString(),
+                        callHash: blake2AsHex(singleEx.extrinsic.method.args[3].toHuman()?.toString()!),
+                        callData: singleEx.extrinsic.method.args[3].toHuman()?.toString()!,
+                        threshold: singleEx.extrinsic.method.args[0].toHuman()?.toString()!,
+                        tip: singleEx.extrinsic.tip.toHuman()?.toString()!,
                         maybeTimepoint: singleEx.extrinsic.method.args[2].toHuman(),
                         maxWeight: singleEx.extrinsic.method.args[5].toHuman()
                     };
@@ -122,17 +125,17 @@ export async function runCrawlers() {
             });
             if (tempMultiSigRecord.length != 0) {
                 let multisigDBRecord: ICancelAsMulti_MultiSigWallet = {
-                    address: tempMultiSigRecord[0].event.data[2].toHuman()?.toString(),
-                    signature: singleEx.signature.toHuman()?.toString(),
-                    signer: singleEx.signer.toHuman()?.toString(),
+                    address: tempMultiSigRecord[0].event.data[2].toHuman()?.toString()!,
+                    signature: singleEx.signature.toHuman()?.toString()!,
+                    signer: singleEx.signer.toHuman()?.toString()!,
                     signitories: (singleEx.method.args[1] as any).map((signitory) => {
                         return String(signitory.toHuman())
                     }),
                     method: singleEx.method.method,
                     eventType,
-                    callHash: singleEx.method.args[3].toHuman()?.toString(),
-                    threshold: singleEx.method.args[0].toHuman()?.toString(),
-                    tip: singleEx.tip.toHuman()?.toString(),
+                    callHash: singleEx.method.args[3].toHuman()?.toString()!,
+                    threshold: singleEx.method.args[0].toHuman()?.toString()!,
+                    tip: singleEx.tip.toHuman()?.toString()!,
                     timepoint: singleEx.method.args[2].toHuman()
                 };
                 console.log('Saving in DB: ', multisigDBRecord)
