@@ -43,6 +43,11 @@ It correctly bundles the app in production mode and optimizes the build for the 
 The build is minified and the filenames include the hashes.
 The app is now ready to be deployed!
 
+### Docker
+
+1. ```sudo docker build -t subscan-multisig-backend/node:latest .```
+2. ```sudo docker run -p 9000:9000 subscan-multisig-backend/node:latest```
+
 ## Built With
 
 * [TypeScript](https://www.typescriptlang.org/) - Typed JavaScript at Any Scale.
