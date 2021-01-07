@@ -1,7 +1,11 @@
 import { ApiPromise, WsProvider } from '@polkadot/api';
-const provider = new WsProvider("wss://cc1-1.polkadot.network/");
+import { config } from 'dotenv';
 import Storage from '../storage'
-import { IAsMulti_MultiSigWallet, IApproveAsMulti_MultiSigWallet, ICancelAsMulti_MultiSigWallet } from '../storage'
+import { IAsMulti_MultiSigWallet, IApproveAsMulti_MultiSigWallet, ICancelAsMulti_MultiSigWallet } from '../storage';
+
+config();
+const NETWORK_WEBSOCKET = process.env.NETWORK_WEBSOCKET || 'wss://cc1-1.polkadot.network/';
+const provider = new WsProvider(NETWORK_WEBSOCKET);
 
 export async function runCrawlers() {
     const storage = new Storage();
@@ -88,7 +92,7 @@ export async function runCrawlers() {
                             return String(signitory.toHuman())
                         }),
                         method: singleEx.extrinsic.method.method,
-                        eventType: singleEvent.method == 'MultisigExecuted' ? 'MultisigExecuted': 'NewMultisig',
+                        eventType: singleEvent.method == 'MultisigExecuted' ? 'MultisigExecuted' : 'NewMultisig',
                         callHash: singleEx.extrinsic.method.args[3].toHuman()?.toString(),
                         threshold: singleEx.extrinsic.method.args[0].toHuman()?.toString(),
                         tip: singleEx.extrinsic.tip.toHuman()?.toString(),
