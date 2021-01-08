@@ -18,7 +18,8 @@ export interface IApproveAsMulti_MultiSigWallet {
     signer: string,
     signitories: string[],
     method: string,
-    eventType: string,
+    // eventType: string,
+    status: string,
     callHash: string,
     maxWeight: string,
     threshold: string,
@@ -32,7 +33,8 @@ export interface ICancelAsMulti_MultiSigWallet {
     signer: string,
     signitories: string[],
     method: string,
-    eventType: string,
+    // eventType: string,
+    status: string,
     callHash: string,
     threshold: string,
     tip: string,
@@ -45,7 +47,8 @@ export interface IAsMulti_MultiSigWallet {
     signer: string,
     signitories: string[],
     method: string,
-    eventType: string,
+    // eventType: string,
+    status: string,
     callHash: string,
     callData: string,
     threshold: string,
@@ -90,7 +93,8 @@ class Storage {
             signer: _wallet.signer,
             signitories: _wallet.signitories,
             method: _wallet.method,
-            eventType: _wallet.eventType,
+            status: _wallet.status,
+            // eventType: _wallet.eventType,
             callHash: _wallet.callHash,
             maxWeight: _wallet.maxWeight,
             threshold: _wallet.threshold,
@@ -100,14 +104,15 @@ class Storage {
         return true;
     }
 
-    async saveCancelAsMulti_MultisigCancelled(_wallet:ICancelAsMulti_MultiSigWallet ) {
+    async saveCancelAsMulti_MultisigCancelled(_wallet: ICancelAsMulti_MultiSigWallet) {
         await this._insert({
             address: _wallet.address,
             signature: _wallet.signature,
             signer: _wallet.signer,
             signitories: _wallet.signitories,
             method: _wallet.method,
-            eventType: _wallet.eventType,
+            status: _wallet.status,
+            // eventType: _wallet.eventType,
             callHash: _wallet.callHash,
             threshold: _wallet.threshold,
             tip: _wallet.tip,
@@ -123,7 +128,8 @@ class Storage {
             signer: _wallet.signer,
             signitories: _wallet.signitories,
             method: _wallet.method,
-            eventType: _wallet.eventType,
+            status: _wallet.status,
+            // eventType: _wallet.eventType,
             callHash: _wallet.callHash,
             threshold: _wallet.threshold,
             tip: _wallet.tip,
@@ -133,14 +139,12 @@ class Storage {
         return true;
     }
 
-    async query(address: any) {
-        const query = { "item.address": address };
-
+    async query(query: any) {
         return new Promise((resolve, reject) => {
             this._db.find(query, (err: any, docs: string | any[]) => {
                 if (err) reject();
                 resolve(docs);
-            });
+            })?.sort({ "created_at": -1 }); // sort from newest to oldest
         });
     }
 
