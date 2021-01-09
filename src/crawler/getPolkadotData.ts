@@ -56,7 +56,6 @@ export async function runCrawlers() {
                         return false;
                 }
             });
-
             if (tempMultiSigRecord.length != 0) {
                 let query = {
                     $and: [
@@ -64,9 +63,9 @@ export async function runCrawlers() {
                         { "item.callHash": singleEx.method.args[3].toHuman()?.toString()! },
                     ],
                 };
-
+                let approving = tempMultiSigRecord[0].event.data[0].toHuman()?.toString()!;
                 let result = await storage.query(query) as Array<any>;
-                if (result.length > 0) { await storage._db.update(query, { $set: { "item.status": status } }); return; }
+                if (result.length > 0) { await storage._db.update(query, { $set: { "item.status": status, "item.approving": approving } }); return; }
 
                 let multisigDBRecord: IApproveAsMulti_MultiSigWallet = {
                     address: tempMultiSigRecord[0].event.data[addressIndex].toHuman()?.toString()!,
@@ -78,6 +77,7 @@ export async function runCrawlers() {
                     method: singleEx.method.method,
                     // eventType,
                     status: status,
+                    approving,
                     callHash: singleEx.method.args[3].toHuman()?.toString()!,
                     maxWeight: singleEx.method.args[4].toHuman()?.toString()!,
                     threshold: singleEx.method.args[0].toHuman()?.toString()!,
@@ -120,8 +120,10 @@ export async function runCrawlers() {
                             { "item.callHash": blake2AsHex(singleEx.extrinsic.method.args[3].toHuman()?.toString()!) },
                         ],
                     };
+
+                    let approving = singleEvent.data[0].toHuman()?.toString()!;
                     let result = await storage.query(query) as Array<any>;
-                    if (result.length > 0) { await storage._db.update(query, { $set: { "item.status": status } }); return; }
+                    if (result.length > 0) { await storage._db.update(query, { $set: { "item.status": status, "item.approving": approving } }); return; }
 
                     let multisigDBRecord: IAsMulti_MultiSigWallet = {
                         address: singleEvent.data[addressIndex].toHuman()?.toString()!,
@@ -133,6 +135,7 @@ export async function runCrawlers() {
                         method: singleEx.extrinsic.method.method,
                         // eventType,
                         status,
+                        approving,
                         callHash: blake2AsHex(singleEx.extrinsic.method.args[3].toHuman()?.toString()!),
                         callData: singleEx.extrinsic.method.args[3].toHuman()?.toString()!,
                         threshold: singleEx.extrinsic.method.args[0].toHuman()?.toString()!,
@@ -169,8 +172,9 @@ export async function runCrawlers() {
                     { "item.callHash": singleEx.method.args[3].toHuman()?.toString()! },
                 ],
             };
+            let cancelling = tempMultiSigRecord[0].event.data[0].toHuman()?.toString()!;
             let result = await storage.query(query) as Array<any>;
-            if (result.length > 0) { await storage._db.update(query, { $set: { "item.status": status } }); return; }
+            if (result.length > 0) { await storage._db.update(query, { $set: { "item.status": status, "item.cancelling": cancelling } }); return; }
 
             if (tempMultiSigRecord.length != 0) {
                 let multisigDBRecord: ICancelAsMulti_MultiSigWallet = {
@@ -183,6 +187,7 @@ export async function runCrawlers() {
                     method: singleEx.method.method,
                     // eventType,
                     status,
+                    cancelling,
                     callHash: singleEx.method.args[3].toHuman()?.toString()!,
                     threshold: singleEx.method.args[0].toHuman()?.toString()!,
                     tip: singleEx.tip.toHuman()?.toString()!,
