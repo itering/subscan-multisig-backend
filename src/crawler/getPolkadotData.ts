@@ -5,7 +5,7 @@ import Storage from '../storage'
 import { IAsMulti_MultiSigWallet, IApproveAsMulti_MultiSigWallet, ICancelAsMulti_MultiSigWallet } from '../storage';
 import { ENDPOINTS_MAP } from '../types/networks'
 config();
-const NETWORK = process.env.NETWORK || 'polkadot';
+const NETWORK = process.env.NETWORK || 'crab';
 const provider = new WsProvider(ENDPOINTS_MAP[NETWORK].wss);
 
 export async function runCrawlers() {
@@ -40,15 +40,15 @@ export async function runCrawlers() {
         approveAsMulti && approveAsMulti.map(async (singleEx) => {
             let addressIndex = 1; // To handle address present on different index in data returned
             // let eventType;
-            let status; // Better readiblity of the returned data
+            let status, callCreator, approvals ; 
             let tempMultiSigRecord = allEventRecords.filter((ex) => {
                 switch (ex.event.method) {
                     case 'NewMultisig':
-                        // eventType = 'NewMultisig';
+                        callCreator = ex.event.data[0].toHuman()?.toString()!;
+                        approvals = [];
                         status = 'created';
                         return ex.event.section == 'multisig' && ex.event.data[2] as unknown as string == singleEx.method.args[3].toHuman()?.toString()
                     case 'MultisigApproval':
-                        // eventType = 'MultisigApproval';
                         status = 'approving';
                         addressIndex = 2;
                         return ex.event.section == 'multisig' && ex.event.data[3] as unknown as string == singleEx.method.args[3].toHuman()?.toString()
@@ -65,7 +65,13 @@ export async function runCrawlers() {
                 };
                 let approving = tempMultiSigRecord[0].event.data[0].toHuman()?.toString()!;
                 let result = await storage.query(query) as Array<any>;
-                if (result.length > 0) { await storage._db.update(query, { $set: { "item.status": status, "item.approving": approving } }); return; }
+                if (result.length > 0) { 
+                    await storage._db.update(query, { 
+                        $set: { "item.status": status, "item.method": singleEx.method.method }, 
+                        $push: {"item.approvals": approving} 
+                    }); 
+                    return; 
+                }
 
                 let multisigDBRecord: IApproveAsMulti_MultiSigWallet = {
                     address: tempMultiSigRecord[0].event.data[addressIndex].toHuman()?.toString()!,
@@ -77,7 +83,8 @@ export async function runCrawlers() {
                     method: singleEx.method.method,
                     // eventType,
                     status: status,
-                    approving,
+                    approvals,
+                    ...callCreator && {callCreator},
                     callHash: singleEx.method.args[3].toHuman()?.toString()!,
                     maxWeight: singleEx.method.args[4].toHuman()?.toString()!,
                     threshold: singleEx.method.args[0].toHuman()?.toString()!,
@@ -101,15 +108,14 @@ export async function runCrawlers() {
             singleEx.events.map(async (singleEvent) => {
                 if (singleEvent.section == 'multisig') {
                     let addressIndex = 1;
-                    // let eventType;
-                    let status;
+                    let callCreator, status, approvals;
                     switch (singleEvent.method) {
                         case 'NewMultisig':
-                            // eventType = 'NewMultisig';
+                            callCreator = singleEvent.data[0].toHuman()?.toString()
                             status = 'created';
+                            approvals = [];
                             break;
                         case 'MultisigExecuted':
-                            // eventType = 'MultisigExecuted';
                             status = 'executed';
                             addressIndex = 2;
                             break;
@@ -123,8 +129,12 @@ export async function runCrawlers() {
 
                     let approving = singleEvent.data[0].toHuman()?.toString()!;
                     let result = await storage.query(query) as Array<any>;
-                    if (result.length > 0) { await storage._db.update(query, { $set: { "item.status": status, "item.approving": approving } }); return; }
-
+                    // Because the approver of multisigexecuted will also be part of the approvals array
+                    if (result.length > 0) { 
+                        await storage._db.update(query, { $set: { 
+                            "item.status": status, "item.callData": singleEx.extrinsic.method.args[3].toHuman()?.toString()! }, 
+                            $push: {"item.approvals": approving}  }); return; 
+                        }
                     let multisigDBRecord: IAsMulti_MultiSigWallet = {
                         address: singleEvent.data[addressIndex].toHuman()?.toString()!,
                         signature: singleEx.extrinsic.signature.toHuman()?.toString()!,
@@ -132,10 +142,10 @@ export async function runCrawlers() {
                         signitories: (singleEx.extrinsic.method.args[1] as any).map((signitory) => {
                             return String(signitory.toHuman())
                         }),
+                        ...callCreator && {callCreator} ,
                         method: singleEx.extrinsic.method.method,
-                        // eventType,
                         status,
-                        approving,
+                        approvals,
                         callHash: blake2AsHex(singleEx.extrinsic.method.args[3].toHuman()?.toString()!),
                         callData: singleEx.extrinsic.method.args[3].toHuman()?.toString()!,
                         threshold: singleEx.extrinsic.method.args[0].toHuman()?.toString()!,
@@ -160,7 +170,6 @@ export async function runCrawlers() {
                 switch (ex.event.method) {
                     case 'MultisigCancelled':
                         status = 'cancelled';
-                        // eventType = 'MultisigCancelled';
                         return ex.event.section == 'multisig' && ex.event.data[3] as unknown as string == singleEx.method.args[3].toHuman()?.toString()
                     default:
                         return false
