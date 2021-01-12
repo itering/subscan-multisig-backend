@@ -12,54 +12,15 @@ const DAY = 24 * HOUR;
 
 const CompactionTimeout = 10 * SECOND;
 
-export interface IApproveAsMulti_MultiSigWallet {
-    address: string,
-    signature: string,
-    signer: string,
-    signitories: string[],
-    callCreator?: string,
+export interface multisig_calls {
+    multisig_address: string,
+    call_hash: string,
+    call_data: string,
+    status: string,
     approvals: string[],
-    method: string,
-    callData?: string,
-    // eventType: string,
-    status: string,
-    callHash: string,
-    maxWeight: string,
-    threshold: string,
-    tip: string,
-    maybeTimePoint: any
-}
-
-export interface ICancelAsMulti_MultiSigWallet {
-    address: string,
-    signature: string,
-    signer: string,
-    signitories: string[],
-    method: string,
-    cancelling: string,
-    // eventType: string,
-    status: string,
-    callHash: string,
-    threshold: string,
-    tip: string,
-    timepoint?: any
-}
-
-export interface IAsMulti_MultiSigWallet {
-    address: string,
-    signature: string,
-    signer: string,
-    signitories: string[],
-    callCreator?: string,
-    method: string,
-    approvals: string[],
-    status: string,
-    callHash: string,
-    callData?: string,
-    threshold: string,
-    tip: string,
-    maybeTimepoint: any,
-    maxWeight: any
+    depositor: string,
+    deposit: string,
+    when: string,
 }
 
 const now = () => new Date().getTime();
@@ -90,66 +51,23 @@ class Storage {
         });
     }
 
-    //NOTE: callName_EventName
-    async saveApproveAsMulti_NewMultisig(_wallet: IApproveAsMulti_MultiSigWallet) {
+    async saveMultiSigCalls(_wallet: multisig_calls) {
         await this._insert({
-            address: _wallet.address,
-            callCreator: _wallet.callCreator,
+            multisig_address: _wallet.multisig_address,
+            call_hash: _wallet.call_hash,
+            call_data: _wallet.call_data,
+            status: _wallet.status,
             approvals: _wallet.approvals,
-            signature: _wallet.signature,
-            signer: _wallet.signer,
-            signitories: _wallet.signitories,
-            method: _wallet.method,
-            status: _wallet.status,
-            callData:_wallet.callData,
-            // eventType: _wallet.eventType,
-            callHash: _wallet.callHash,
-            maxWeight: _wallet.maxWeight,
-            threshold: _wallet.threshold,
-            tip: _wallet.tip,
-            maybeTimePoint: _wallet.maybeTimePoint
+            depositor: _wallet.depositor,
+            deposit: _wallet.deposit,
+            when: _wallet.when,
         });
         return true;
     }
 
-    async saveCancelAsMulti_MultisigCancelled(_wallet: ICancelAsMulti_MultiSigWallet) {
-        await this._insert({
-            address: _wallet.address,
-            signature: _wallet.signature,
-            signer: _wallet.signer,
-            signitories: _wallet.signitories,
-            method: _wallet.method,
-            status: _wallet.status,
-            // eventType: _wallet.eventType,
-            callHash: _wallet.callHash,
-            threshold: _wallet.threshold,
-            tip: _wallet.tip,
-            timepoint: _wallet.timepoint
-        });
-        return true;
-    }
+    async query(multisig_address: any) {
+        const query = { "item.multisig_address": multisig_address };
 
-    async saveAsMulti_NewMultisig_MultisigExecuted(_wallet: IAsMulti_MultiSigWallet) {
-        await this._insert({
-            address: _wallet.address,
-            signature: _wallet.signature,
-            signer: _wallet.signer,
-            approvals: _wallet.approvals,
-            signitories: _wallet.signitories,
-            callCreator: _wallet.callCreator,
-            method: _wallet.method,
-            status: _wallet.status,
-            callHash: _wallet.callHash,
-            callData:_wallet.callData,
-            threshold: _wallet.threshold,
-            tip: _wallet.tip,
-            maybeTimepoint: _wallet.maybeTimepoint,
-            maxWeight: _wallet.maxWeight
-        });
-        return true;
-    }
-
-    async query(query: any) {
         return new Promise((resolve, reject) => {
             this._db.find(query, (err: any, docs: string | any[]) => {
                 if (err) reject();
