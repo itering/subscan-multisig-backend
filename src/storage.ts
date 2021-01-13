@@ -20,7 +20,7 @@ export interface multisig_calls {
     approvals: string[],
     depositor: string,
     deposit: string,
-    when: string,
+    when: any,
 }
 
 const now = () => new Date().getTime();
@@ -65,9 +65,7 @@ class Storage {
         return true;
     }
 
-    async query(multisig_address: any) {
-        const query = { "item.multisig_address": multisig_address };
-
+    async query(query: any) {
         return new Promise((resolve, reject) => {
             this._db.find(query, (err: any, docs: string | any[]) => {
                 if (err) reject();

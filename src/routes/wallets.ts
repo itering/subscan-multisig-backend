@@ -6,8 +6,8 @@ const router = express.Router();
 
 router.get('/', async (req: Request, res: Response, next: NextFunction) => {
   const storage = new Storage();
-  const { address } = req.query;
-  const query = { "item.address": address }; // distinct call hash can is latest = true
+  const { multisig_address } = req.query;
+  const query = { "item.multisig_address": multisig_address };
   let records = await storage.query(query) as Array<any>;
 
   res.send(records);

@@ -8,7 +8,7 @@ const router = Router();
 
 // Add sub-routes
 router.use('/status', status)
-router.use('/wallets', wallet)
+router.use('/calls', wallet)
 
 // Export the base-router
 export default router;
