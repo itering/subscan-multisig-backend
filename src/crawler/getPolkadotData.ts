@@ -45,10 +45,10 @@ export async function runCrawlers() {
 
                     payload.call_data = _datumPair.extrinsic.method.method == 'asMulti' ? _datumPair.extrinsic.method.args[3].toHuman()?.toString()! : (await storage.query({ "item.call_hash": _datumPair.extrinsic.method.args[3].toHuman()?.toString()! }) as Array<any>)[0]?.item.call_data; // We don't get call_data until the final approval call (as_multi), so I think the call_data for other calls would be empty. but in case we had a call_data in DB before from some other final call of as_multi then we'd have its data and we'd add it here.
 
-                    payload.status = event.method == 'NewMultisig' && _datumPair.extrinsic.method.method == 'approveAsMulti' ? 'created' : event.method == 'MultisigApproval' && _datumPair.extrinsic.method.method == 'approveAsMulti' ? 'approving' : event.method == 'MultisigExecuted' && _datumPair.extrinsic.method.method == 'asMulti' ? 'executed' : event.method == 'MultisigCancelled' && _datumPair.extrinsic.method.method == 'cancelAsMulti' ? 'cancelled' : '';
+                    payload.status = event.method == 'NewMultisig' && (_datumPair.extrinsic.method.method == 'approveAsMulti' || _datumPair.extrinsic.method.method == 'asMulti' ) ? 'created' : event.method == 'MultisigApproval' && _datumPair.extrinsic.method.method == 'approveAsMulti' ? 'approving' : event.method == 'MultisigExecuted' && _datumPair.extrinsic.method.method == 'asMulti' ? 'executed' : event.method == 'MultisigCancelled' && _datumPair.extrinsic.method.method == 'cancelAsMulti' ? 'cancelled' : '';
 
                     // payload.approvals
-                    if (event.method == 'NewMultisig' && _datumPair.extrinsic.method.method == 'approveAsMulti') {
+                    if (event.method == 'NewMultisig' && (_datumPair.extrinsic.method.method == 'approveAsMulti' || _datumPair.extrinsic.method.method == 'asMulti' )) {
                         payload.approvals = [event.data[0].toHuman()?.toString()!];
                     } else {
                         let multisig_addressIndex = 2;
