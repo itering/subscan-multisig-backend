@@ -5,14 +5,12 @@ import _ from 'lodash';
 const router = express.Router();
 
 router.get('/', async (req: Request, res: Response, next: NextFunction) => {
-    const storage = new Storage();
-    const { address } = req.query;
-    let records = await storage.query(address) as Array<any>;
+  const storage = new Storage();
+  const { multisig_address } = req.query;
+  const query = { "item.multisig_address": multisig_address };
+  let records = await storage.query(query) as Array<any>;
 
-    let groupedByCallHash = _.groupBy(records, function(x) {
-        return x.item.eventType;
-      });
-    res.send(groupedByCallHash);
+  res.send(records);
 });
 
 export default router;

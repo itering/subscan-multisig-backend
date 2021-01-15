@@ -5,7 +5,7 @@ This project serves as backend for Subscan Multi Signature Wallet you can find t
 Define the URL websocket for the parachain as environment variables or simply save it in a `.env` file inside the main folder:
 
 ``` 
-NETWORK_WEBSOCKET= 'wss://cc1-1.polkadot.network/' # For Polkadot
+NETWORK = 'polkadot' # For Polkadot, kusama for Kusama etc.
 ```
 
 ## Pre-requisites

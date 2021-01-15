@@ -1,18 +1,19 @@
 import { ApiPromise, WsProvider } from '@polkadot/api';
+import { blake2AsHex } from '@polkadot/util-crypto';
 import { config } from 'dotenv';
 import Storage from '../storage'
-import { IAsMulti_MultiSigWallet, IApproveAsMulti_MultiSigWallet, ICancelAsMulti_MultiSigWallet } from '../storage';
-
+import { multisig_calls } from '../storage';
+import { ENDPOINTS_MAP } from '../types/networks'
 config();
-const NETWORK_WEBSOCKET = process.env.NETWORK_WEBSOCKET || 'wss://cc1-1.polkadot.network/';
-const provider = new WsProvider(NETWORK_WEBSOCKET);
-import { blake2AsHex } from '@polkadot/util-crypto';
+const NETWORK = process.env.NETWORK || 'crab';
+const provider = new WsProvider(ENDPOINTS_MAP[NETWORK].wss);
 
 export async function runCrawlers() {
     const storage = new Storage();
 
     const api = await ApiPromise.create({
-        provider
+        provider,
+        types: ENDPOINTS_MAP[NETWORK].types
     });
 
     const [chain, nodeName, nodeVersion] = await Promise.all([
@@ -22,130 +23,73 @@ export async function runCrawlers() {
     ]);
 
     console.log(`You are connected to chain ${chain} using ${nodeName} v${nodeVersion}`);
-
     await api.rpc.chain.subscribeFinalizedHeads(async (header) => {
         console.log(`${chain} is at block: #${header.number}`);
-
         const blockHash = await api.rpc.chain.getBlockHash(header.number as unknown as number);
-        const signedBlock = await api.rpc.chain.getBlock(blockHash);
         console.log(`Block Number is ${header.number}`)
-        const allEventRecords = await api.query.system.events.at(signedBlock.block.header.hash);
 
-        // Approve As Multi
-        let approveAsMulti = signedBlock.block.extrinsics.filter((ex) => {
-            return ex.method.section == 'multisig' && ex.method.method == 'approveAsMulti'
+        const blockData = await api.derive.chain.getBlock(blockHash);
+        let filteredData = blockData?.extrinsics.filter((ex) => {
+            return ex.extrinsic.method.section == 'multisig';
         });
 
-        approveAsMulti && approveAsMulti.map(async (singleEx) => {
-            let addressIndex = 1; // To handle address present on different index in data returned
-            let eventType; // Better readiblity of the returned data
-            let tempMultiSigRecord = allEventRecords.filter((ex) => {
-                switch (ex.event.method) {
-                    case 'NewMultisig':
-                        eventType = 'NewMultisig';
-                        return ex.event.section == 'multisig' && ex.event.data[2] as unknown as string == singleEx.method.args[3].toHuman()?.toString()
-                    case 'MultisigApproval':
-                        addressIndex = 2;
-                        eventType = 'MultisigApproval';
-                        return ex.event.section == 'multisig' && ex.event.data[3] as unknown as string == singleEx.method.args[3].toHuman()?.toString()
-                    default:
-                        return false;
-                }
-            });
+        filteredData && filteredData.map(async (_datumPair) => {
+            _datumPair.events.map(async (event) => {
+                if (event.section == 'multisig') {
+                    let payload: multisig_calls = {} as multisig_calls;
 
-            if (tempMultiSigRecord.length != 0) {
-                let multisigDBRecord: IApproveAsMulti_MultiSigWallet = {
-                    address: tempMultiSigRecord[0].event.data[addressIndex].toHuman()?.toString()!,
-                    signature: singleEx.signature.toHuman()?.toString()!,
-                    signer: singleEx.signer.toHuman()?.toString()!,
-                    signitories: (singleEx.method.args[1] as any).map((signitory) => {
-                        return String(signitory.toHuman())
-                    }),
-                    method: singleEx.method.method,
-                    eventType,
-                    callHash: singleEx.method.args[3].toHuman()?.toString()!,
-                    maxWeight: singleEx.method.args[4].toHuman()?.toString()!,
-                    threshold: singleEx.method.args[0].toHuman()?.toString()!,
-                    tip: singleEx.tip.toHuman()?.toString()!,
-                    maybeTimePoint: singleEx.method.args[2].toHuman()
-                };
-                console.log('Saving in DB: ', multisigDBRecord)
-                storage.saveApproveAsMulti_NewMultisig(multisigDBRecord);
-            }
-            else {
-                console.log('No NewMultisig method found in the event')
-            }
-        });
+                    payload.multisig_address = event.method == 'NewMultisig' ? event.data[1].toHuman()?.toString()! : event.data[2].toHuman()?.toString()!;
 
-        // As Multi
-        const asMultiBlock = await api.derive.chain.getBlock(blockHash);
-        let asMulti = asMultiBlock?.extrinsics.filter((ex) => {
-            return ex.extrinsic.method.section == 'multisig' && ex.extrinsic.method.method == 'asMulti';
-        });
-        asMulti && asMulti.map(async (singleEx) => {
-            singleEx.events.map((singleEvent) => {
-                if (singleEvent.section == 'multisig') {
-                    // let hash = blake2AsHex(singleEx.extrinsic.method.args[3].toHuman()?.toString()!);
-                    let multisigDBRecord: IAsMulti_MultiSigWallet = {
-                        address: singleEvent.method == 'MultisigExecuted' ? singleEvent.data[2].toHuman()?.toString()! : singleEvent.data[1].toHuman()?.toString()!,
-                        signature: singleEx.extrinsic.signature.toHuman()?.toString()!,
-                        signer: singleEx.extrinsic.signer.toHuman()?.toString()!,
-                        signitories: (singleEx.extrinsic.method.args[1] as any).map((signitory) => {
-                            return String(signitory.toHuman())
-                        }),
-                        method: singleEx.extrinsic.method.method,
-                        eventType: singleEvent.method == 'MultisigExecuted' ? 'MultisigExecuted' : 'NewMultisig',
-                        callHash: blake2AsHex(singleEx.extrinsic.method.args[3].toHuman()?.toString()!),
-                        callData: singleEx.extrinsic.method.args[3].toHuman()?.toString()!,
-                        threshold: singleEx.extrinsic.method.args[0].toHuman()?.toString()!,
-                        tip: singleEx.extrinsic.tip.toHuman()?.toString()!,
-                        maybeTimepoint: singleEx.extrinsic.method.args[2].toHuman(),
-                        maxWeight: singleEx.extrinsic.method.args[5].toHuman()
+                    payload.call_hash = _datumPair.extrinsic.method.method == 'asMulti' ? blake2AsHex(_datumPair.extrinsic.method.args[3].toHuman()?.toString()!) : _datumPair.extrinsic.method.args[3].toHuman()?.toString()!; // only as_multi will have actual call_data other calls will only have the call_hash
+                    // for final approval we send full call data instead of the hash
+
+                    payload.call_data = _datumPair.extrinsic.method.method == 'asMulti' ? _datumPair.extrinsic.method.args[3].toHuman()?.toString()! : (await storage.query({ "item.call_hash": _datumPair.extrinsic.method.args[3].toHuman()?.toString()! }) as Array<any>)[0]?.item.call_data; // We don't get call_data until the final approval call (as_multi), so I think the call_data for other calls would be empty. but in case we had a call_data in DB before from some other final call of as_multi then we'd have its data and we'd add it here.
+
+                    payload.status = event.method == 'NewMultisig' && (_datumPair.extrinsic.method.method == 'approveAsMulti' || _datumPair.extrinsic.method.method == 'asMulti' ) ? 'created' : event.method == 'MultisigApproval' && _datumPair.extrinsic.method.method == 'approveAsMulti' ? 'approving' : event.method == 'MultisigExecuted' && _datumPair.extrinsic.method.method == 'asMulti' ? 'executed' : event.method == 'MultisigCancelled' && _datumPair.extrinsic.method.method == 'cancelAsMulti' ? 'cancelled' : '';
+
+                    // payload.approvals
+                    if (event.method == 'NewMultisig' && (_datumPair.extrinsic.method.method == 'approveAsMulti' || _datumPair.extrinsic.method.method == 'asMulti' )) {
+                        payload.approvals = [event.data[0].toHuman()?.toString()!];
+                    } else {
+                        let multisig_addressIndex = 2;
+                        let call_hash = _datumPair.extrinsic.method.args[3].toHuman()?.toString()!;
+                        if (event.method == 'NewMultisig') { multisig_addressIndex = 1 };
+                        if (_datumPair.extrinsic.method.method == 'asMulti') { call_hash = blake2AsHex(call_hash) }
+
+                        let temparray = (await storage.query({
+                            $and: [
+                                { "item.multisig_address": event.data[multisig_addressIndex].toHuman()?.toString()! },
+                                { "item.call_hash": call_hash },
+                            ],
+                        }) as Array<any>)[0]?.item.approvals;
+                        temparray?.push(event.data[0].toHuman()?.toString()!)
+                        payload.approvals = temparray;
                     };
-                    console.log('Saving in DB: ', multisigDBRecord)
-                    storage.saveAsMulti_NewMultisig_MultisigExecuted(multisigDBRecord);
+
+                    // depositor
+                    if (event.method == 'NewMultisig' && (_datumPair.extrinsic.method.method == 'approveAsMulti' || _datumPair.extrinsic.method.method == 'asMulti')) {
+                        payload.depositor = event.data[0].toHuman()?.toString()!;
+                    } else {
+                        let multisig_addressIndex = 2;
+                        let call_hash = _datumPair.extrinsic.method.args[3].toHuman()?.toString()!;
+                        if (event.method == 'NewMultisig') { multisig_addressIndex = 1 };
+                        if (_datumPair.extrinsic.method.method == 'asMulti') { call_hash = blake2AsHex(call_hash) }
+
+                        payload.depositor = (await storage.query({
+                            $and: [
+                                { "item.multisig_address": event.data[multisig_addressIndex].toHuman()?.toString()! },
+                                { "item.call_hash": call_hash },
+                            ],
+                        }) as Array<any>)[0]?.item.approvals[0]
+                    };/*getting depositor from the first element of the approvals array if its not a NewMultisig*/
+
+                    payload.deposit = ''; // Leaving it out for now
+
+                    payload.when = _datumPair.extrinsic.method.args[2].toHuman(); // if this is the first approval, then this will be `None`
+                    console.log('Saving in DB: ', payload)
+                    storage.saveMultiSigCalls(payload)
                 }
             })
-        });
-
-        // Cancel As Multi
-        let cancelAsMulti = signedBlock.block.extrinsics.filter((ex) => {
-            return ex.method.section == 'multisig' && ex.method.method == 'cancelAsMulti'
-        });
-        cancelAsMulti && cancelAsMulti.map(async (singleEx) => {
-            let eventType; // Better readiblity of the returned data
-            let tempMultiSigRecord = allEventRecords.filter((ex) => {
-                switch (ex.event.method) {
-                    case 'MultisigCancelled':
-                        eventType = 'MultisigCancelled';
-                        return ex.event.section == 'multisig' && ex.event.data[3] as unknown as string == singleEx.method.args[3].toHuman()?.toString()
-                    default:
-                        return false
-                }
-            });
-            if (tempMultiSigRecord.length != 0) {
-                let multisigDBRecord: ICancelAsMulti_MultiSigWallet = {
-                    address: tempMultiSigRecord[0].event.data[2].toHuman()?.toString()!,
-                    signature: singleEx.signature.toHuman()?.toString()!,
-                    signer: singleEx.signer.toHuman()?.toString()!,
-                    signitories: (singleEx.method.args[1] as any).map((signitory) => {
-                        return String(signitory.toHuman())
-                    }),
-                    method: singleEx.method.method,
-                    eventType,
-                    callHash: singleEx.method.args[3].toHuman()?.toString()!,
-                    threshold: singleEx.method.args[0].toHuman()?.toString()!,
-                    tip: singleEx.tip.toHuman()?.toString()!,
-                    timepoint: singleEx.method.args[2].toHuman()
-                };
-                console.log('Saving in DB: ', multisigDBRecord)
-                storage.saveCancelAsMulti_MultisigCancelled(multisigDBRecord);
-            }
-            else {
-                console.log('No cancelAsMulti method found in the event')
-            }
-        });
-
-        //NOTE: Not supporting the call asMultiThreshol1 for now
+        })
     });
 }
