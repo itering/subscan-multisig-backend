@@ -4,10 +4,9 @@
   "scripts": {
     "build": "tsc --build tsconfig.json",
     "lint": "tslint --project \"tsconfig.json\"",
-    "start": "node -r module-alias/register ./dist",
-    "start:dev": "nodemon",
-    "test": "nodemon --config ./spec/nodemon.json",
-    "prod:start": "pm2-runtime ./dist"
+    "start": "node -r module-alias/register ./dist/src -e development",
+    "start:dev": "nodemon -e development",
+    "test": "nodemon --config ./spec/nodemon.json"
   },
   "nodemonConfig": {
     "watch": [

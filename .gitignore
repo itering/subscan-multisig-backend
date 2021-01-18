@@ -28,3 +28,9 @@ benchmarks/graphs
 
 #env
 .env
+
+# Build artifacts
+/dist
+
+# Runtime storage
+/storage
