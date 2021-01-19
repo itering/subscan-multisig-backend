@@ -32,7 +32,7 @@ const sha256 = (x: any) =>
 
 class Storage {
     _db: Datastore<any>;
-    constructor(filename = process.env.STORAGE_DIR, autoload = true) {
+    constructor(filename = process.env.STORAGE_FILE_PATH, autoload = true) {
         this._db = new Datastore({ filename, autoload });
     }
 

@@ -13,4 +13,4 @@ WORKDIR /app
 COPY --from=builder /app/dist/src .
 
 EXPOSE 9000
-CMD [ "node", "-r=module-alias/register", "/app" ]
+CMD [ "node", "-r", "module-alias/register", "/app" ]
