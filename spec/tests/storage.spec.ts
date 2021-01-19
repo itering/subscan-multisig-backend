@@ -40,7 +40,8 @@ describe('Storage', () => {
       when: {
         "height": "3,519,383",
         "index": "2"
-      }
+      },
+      chain: 'Darwinia Crab'
     }
     instance.saveMultiSigCalls(fakepayload);
     expect(fakepayload).toBeTruthy((await instance.query({ "item.multisig_address": "5Hb3obCBk9Jy7fWhPrTQJzbtx9Pnfv2QpwHYsWSHHXxCSKxA" }) as Array<any>)[0]?.item);
