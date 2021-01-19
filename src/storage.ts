@@ -21,6 +21,7 @@ export interface multisig_calls {
     depositor: string,
     deposit: string,
     when: any,
+    chain: string
 }
 
 const now = () => new Date().getTime();
@@ -32,7 +33,7 @@ const sha256 = (x: any) =>
 
 class Storage {
     _db: Datastore<any>;
-    constructor(filename = process.env.STORAGE_FILE_PATH, autoload = true) {
+    constructor(filename = process.env.STORAGE_FILE_PATH || './storage.db', autoload = true) {
         this._db = new Datastore({ filename, autoload });
     }
 
@@ -61,6 +62,7 @@ class Storage {
             depositor: _wallet.depositor,
             deposit: _wallet.deposit,
             when: _wallet.when,
+            chain: _wallet.chain,
         });
         return true;
     }
