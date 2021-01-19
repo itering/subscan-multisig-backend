@@ -2,11 +2,11 @@
 
 This project serves as backend for Subscan Multi Signature Wallet you can find the frontend [here](https://github.com/itering/subscan-multisig-ui), which can be used to work with MultiSig Wallets
 
-Define the URL websocket for the parachain as environment variables or simply save it in a `.env` file inside the main folder:
+<!-- Define the URL websocket for the parachain as environment variables or simply save it in a `.env` file inside the main folder:
 
 ``` 
 NETWORK = 'polkadot' # For Polkadot, kusama for Kusama etc.
-```
+``` -->
 
 ## Pre-requisites
 
