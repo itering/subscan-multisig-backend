@@ -4,7 +4,7 @@ import logger from './shared/Logger';
 import { WsProvider } from '@polkadot/api';
 import { runCrawlers } from './crawler/getPolkadotData';
 import { ENDPOINTS_MAP } from './types/networks';
-import Storage from '../src/storage'
+import Storage from './storage'
 
 
 const polkadot = ENDPOINTS_MAP['polkadot']
