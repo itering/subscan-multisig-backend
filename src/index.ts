@@ -3,7 +3,7 @@ import app from './Server';
 import logger from './shared/Logger';
 import { WsProvider } from '@polkadot/api';
 import { runCrawlers } from './crawler/getPolkadotData';
-import { ENDPOINTS_MAP } from '../src/types/networks';
+import { ENDPOINTS_MAP } from './types/networks';
 import Storage from '../src/storage'
 
 
