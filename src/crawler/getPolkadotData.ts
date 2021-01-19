@@ -81,7 +81,7 @@ export async function runCrawlers(provider, types, storage) {
                     payload.deposit = ''; // Leaving it out for now
 
                     payload.when = _datumPair.extrinsic.method.args[2].toHuman(); // if this is the first approval, then this will be `None`
-                    payload.chain = String(chain);
+                    payload.chain = String(chain).replace(/\s/g, "");
                     console.log('Saving in DB: ', payload)
                     storage.saveMultiSigCalls(payload)
                 }
