@@ -45,7 +45,7 @@ export async function runCrawlers(provider, types, storage) {
                     // payload.approvals
                     if (event.method == 'NewMultisig' && (_datumPair.extrinsic.method.method == 'approveAsMulti' || _datumPair.extrinsic.method.method == 'asMulti')) {
                         payload.approvals = [event.data[0].toHuman()?.toString()!];
-                    } else {
+                    } else if (event.method != 'MultisigCancelled') {
                         let multisig_addressIndex = 2;
                         let call_hash = _datumPair.extrinsic.method.args[3].toHuman()?.toString()!;
                         if (event.method == 'NewMultisig') { multisig_addressIndex = 1 };
@@ -82,8 +82,27 @@ export async function runCrawlers(provider, types, storage) {
 
                     payload.when = _datumPair.extrinsic.method.args[2].toHuman(); // if this is the first approval, then this will be `None`
                     payload.chain = String(chain).replace(/\s/g, "");
-                    console.log('Saving in DB: ', payload)
-                    storage.insert(payload)
+                    let preventDuplicateQuery = {
+                        $and: [
+                            { "multisig_address": payload.multisig_address },
+                            { "call_hash": payload.call_hash },
+                            { "call_data": payload.call_data },
+                            { "status": payload.status },
+                            { "approvals": payload.approvals },
+                            { "depositor": payload.depositor },
+                            { "deposit": payload.deposit },
+                            { "when": payload.when },
+                            { "chain": payload.chain },
+                        ],
+                    };
+                    let response = await storage.find(preventDuplicateQuery);
+
+                    if (response.length == 0) {
+                        console.log('Saving in DB: ', payload);
+                        storage.update(payload,
+                            { "$currentDate": { "date": { "$type": "date" } } },
+                            { upsert: true });
+                    }
                 }
             })
         })
