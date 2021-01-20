@@ -1,7 +1,7 @@
 import { ApiPromise, WsProvider } from '@polkadot/api';
 import { blake2AsHex } from '@polkadot/util-crypto';
 import { config } from 'dotenv';
-import { multisig_calls } from '../storage';
+import { multisig_calls } from '../interfaces/multisigCalls';
 config();
 
 export async function runCrawlers(provider, types, storage) {
@@ -38,7 +38,7 @@ export async function runCrawlers(provider, types, storage) {
                     payload.call_hash = _datumPair.extrinsic.method.method == 'asMulti' ? blake2AsHex(_datumPair.extrinsic.method.args[3].toHuman()?.toString()!) : _datumPair.extrinsic.method.args[3].toHuman()?.toString()!; // only as_multi will have actual call_data other calls will only have the call_hash
                     // for final approval we send full call data instead of the hash
 
-                    payload.call_data = _datumPair.extrinsic.method.method == 'asMulti' ? _datumPair.extrinsic.method.args[3].toHuman()?.toString()! : (await storage.query({ "item.call_hash": _datumPair.extrinsic.method.args[3].toHuman()?.toString()! }) as Array<any>)[0]?.item.call_data; // We don't get call_data until the final approval call (as_multi), so I think the call_data for other calls would be empty. but in case we had a call_data in DB before from some other final call of as_multi then we'd have its data and we'd add it here.
+                    payload.call_data = _datumPair.extrinsic.method.method == 'asMulti' ? _datumPair.extrinsic.method.args[3].toHuman()?.toString()! : (await storage.find({ "call_hash": _datumPair.extrinsic.method.args[3].toHuman()?.toString()! }) as Array<any>)[0]?.call_data; // We don't get call_data until the final approval call (as_multi), so I think the call_data for other calls would be empty. but in case we had a call_data in DB before from some other final call of as_multi then we'd have its data and we'd add it here.
 
                     payload.status = event.method == 'NewMultisig' && (_datumPair.extrinsic.method.method == 'approveAsMulti' || _datumPair.extrinsic.method.method == 'asMulti') ? 'created' : event.method == 'MultisigApproval' && _datumPair.extrinsic.method.method == 'approveAsMulti' ? 'approving' : event.method == 'MultisigExecuted' && _datumPair.extrinsic.method.method == 'asMulti' ? 'executed' : event.method == 'MultisigCancelled' && _datumPair.extrinsic.method.method == 'cancelAsMulti' ? 'cancelled' : '';
 
@@ -51,12 +51,12 @@ export async function runCrawlers(provider, types, storage) {
                         if (event.method == 'NewMultisig') { multisig_addressIndex = 1 };
                         if (_datumPair.extrinsic.method.method == 'asMulti') { call_hash = blake2AsHex(call_hash) }
 
-                        let temparray = (await storage.query({
+                        let temparray = (await storage.find({
                             $and: [
-                                { "item.multisig_address": event.data[multisig_addressIndex].toHuman()?.toString()! },
-                                { "item.call_hash": call_hash },
+                                { "multisig_address": event.data[multisig_addressIndex].toHuman()?.toString()! },
+                                { "call_hash": call_hash },
                             ],
-                        }) as Array<any>)[0]?.item.approvals;
+                        }) as Array<any>)[0]?.approvals;
                         temparray?.push(event.data[0].toHuman()?.toString()!)
                         payload.approvals = temparray;
                     };
@@ -70,12 +70,12 @@ export async function runCrawlers(provider, types, storage) {
                         if (event.method == 'NewMultisig') { multisig_addressIndex = 1 };
                         if (_datumPair.extrinsic.method.method == 'asMulti') { call_hash = blake2AsHex(call_hash) }
 
-                        payload.depositor = (await storage.query({
+                        payload.depositor = (await storage.find({
                             $and: [
-                                { "item.multisig_address": event.data[multisig_addressIndex].toHuman()?.toString()! },
-                                { "item.call_hash": call_hash },
+                                { "multisig_address": event.data[multisig_addressIndex].toHuman()?.toString()! },
+                                { "call_hash": call_hash },
                             ],
-                        }) as Array<any>)[0]?.item.approvals[0]
+                        }) as Array<any>)[0]?.approvals[0]
                     };/*getting depositor from the first element of the approvals array if its not a NewMultisig*/
 
                     payload.deposit = ''; // Leaving it out for now
@@ -83,7 +83,7 @@ export async function runCrawlers(provider, types, storage) {
                     payload.when = _datumPair.extrinsic.method.args[2].toHuman(); // if this is the first approval, then this will be `None`
                     payload.chain = String(chain).replace(/\s/g, "");
                     console.log('Saving in DB: ', payload)
-                    storage.saveMultiSigCalls(payload)
+                    storage.insert(payload)
                 }
             })
         })
