@@ -75,7 +75,7 @@ export async function runCrawlers(provider, types, storage) {
                                 { "multisig_address": event.data[multisig_addressIndex].toHuman()?.toString()! },
                                 { "call_hash": call_hash },
                             ],
-                        }) as Array<any>)[0]?.approvals[0]
+                        }) as Array<any>)[0]?.approvals?.[0]
                     };/*getting depositor from the first element of the approvals array if its not a NewMultisig*/
 
                     payload.deposit = ''; // Leaving it out for now
