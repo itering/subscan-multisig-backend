@@ -1,3 +1,4 @@
+/** WARNING: This have a bug of returning and storing same events as different, The NeDB version is deprecated please refer to the mongoDB implementation**/
 import { ApiPromise, WsProvider } from '@polkadot/api';
 import { blake2AsHex } from '@polkadot/util-crypto';
 import { config } from 'dotenv';
