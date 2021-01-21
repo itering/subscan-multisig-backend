@@ -45,7 +45,7 @@ export async function runCrawlers(provider, types, storage) {
                     // payload.approvals
                     if (event.method == 'NewMultisig' && (_datumPair.extrinsic.method.method == 'approveAsMulti' || _datumPair.extrinsic.method.method == 'asMulti')) {
                         payload.approvals = [event.data[0].toHuman()?.toString()!];
-                    } else if (event.method != 'MultisigCancelled') {
+                    } else {
                         let multisig_addressIndex = 2;
                         let call_hash = _datumPair.extrinsic.method.args[3].toHuman()?.toString()!;
                         if (event.method == 'NewMultisig') { multisig_addressIndex = 1 };
@@ -57,7 +57,9 @@ export async function runCrawlers(provider, types, storage) {
                                 { "call_hash": call_hash },
                             ],
                         }) as Array<any>)[0]?.approvals;
-                        temparray?.push(event.data[0].toHuman()?.toString()!)
+                        if (temparray && (temparray?.indexOf(event.data[0].toHuman()?.toString()!) == -1)) {
+                            temparray?.push(event.data[0].toHuman()?.toString()!)
+                        }
                         payload.approvals = temparray;
                     };
 
