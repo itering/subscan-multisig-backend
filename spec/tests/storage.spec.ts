@@ -1,24 +1,21 @@
-import Storage from '../../src/storage';
-import { multisig_calls } from '../../src/storage';
+// import { storage } from 'src/index'
+import monk from 'monk';
+import { config } from 'dotenv';
+import { multisig_calls } from 'src/interfaces/multisigCalls';
 
+config()
 
 describe('Storage', () => {
-  let instance: Storage;
-  let fakeFilename: string;
-  let fakeAutoload: boolean;
+  let instance: any;
   let fakepayload: multisig_calls;
+  let storage: any;
 
   function createInstance() {
-    instance = new Storage(
-      fakeFilename,
-      fakeAutoload,
-    );
+    instance = monk(String(process.env.MONGODB_URI));
+    storage = instance.get('multisig_calls_test')
   }
 
   beforeEach(() => {
-    fakeFilename = 'spec/tests/fakeStorage.db';
-    fakeAutoload = true;
-
     createInstance();
   });
 
@@ -41,10 +38,15 @@ describe('Storage', () => {
         "height": "3,519,383",
         "index": "2"
       },
-      chain: 'Darwinia Crab'
+      chain: 'DarwiniaCrab'
     }
-    instance.saveMultiSigCalls(fakepayload);
-    expect(fakepayload).toBeTruthy((await instance.query({ "item.multisig_address": "5Hb3obCBk9Jy7fWhPrTQJzbtx9Pnfv2QpwHYsWSHHXxCSKxA" }) as Array<any>)[0]?.item);
+    storage.insert(fakepayload);
+    expect(fakepayload).toBeTruthy((await storage.find({
+      $and: [
+        { "multisig_address": "5Hb3obCBk9Jy7fWhPrTQJzbtx9Pnfv2QpwHYsWSHHXxCSKxA" },
+        { "chain": "DarwiniaCrab" },
+      ],
+    }))[0]);
   });
 
 });
