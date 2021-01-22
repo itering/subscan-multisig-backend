@@ -52,7 +52,8 @@ The app is now ready to be deployed!
 
 * [TypeScript](https://www.typescriptlang.org/) - Typed JavaScript at Any Scale.
 * [ExpressJS](https://expressjs.com/) - Fast, unopinionated, minimalist web framework for Node.js
-* [NeDB](https://github.com/louischatriot/nedb) - A Lightweight JavaScript Database
+* [MongoDB](https://github.com/mongodb/mongo) - The MongoDB Database
+* [Monk](https://github.com/Automattic/monk) - The wise MongoDB API
 
 ## Contributing
 
