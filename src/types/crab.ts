@@ -264,4 +264,4 @@ export default {
   PowerOf: {
     power: 'Power'
   }
-}
+};
