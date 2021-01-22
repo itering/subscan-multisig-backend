@@ -1,20 +1,22 @@
-import express, { Request, Response, NextFunction } from 'express'
-import { storage } from '../index'
-import _ from 'lodash'
+import express, { Request, Response, NextFunction } from 'express';
+import Storage from '../storage'
+import _ from 'lodash';
 
-const router = express.Router()
+const router = express.Router();
 
 router.get('/', async (req: Request, res: Response, next: NextFunction) => {
-  const { multisig_address, chain } = req.query
-  const query = {
+  const storage = new Storage();
+  const { multisig_address, chain } = req.query;
+  let query = {
     $and: [
-      { 'multisig_address': multisig_address },
-      { 'chain': chain },
+      { "item.multisig_address": multisig_address },
+      { "item.chain": chain },
     ],
-  }
-  const records = await storage.find(query)
+  };
+  let records = await storage.query(query) as Array<any>;
 
-  res.send(records)
-})
+  res.send(records);
+});
 
-export default router
+export default router;
+
