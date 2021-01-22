@@ -1,23 +1,22 @@
-import crabRegistryType from "./crab";
-import darwiniaRegistryType from "./darwinia";
-
+import crabRegistryType from './crab'
+import darwiniaRegistryType from './darwinia'
 
 export const NETWORK_LIST = [
   {
-    key: "kusama",
-    value: "kusama"
+    key: 'kusama',
+    value: 'kusama'
   },
   {
-    key: "darwinia",
-    value: "darwinia"
+    key: 'darwinia',
+    value: 'darwinia'
   },
   {
-    key: "crab",
-    value: "crab"
+    key: 'crab',
+    value: 'crab'
   },
   {
-    key: "polkadot",
-    value: "polkadot"
+    key: 'polkadot',
+    value: 'polkadot'
   }
 ]
 
