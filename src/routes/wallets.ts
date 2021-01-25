@@ -12,7 +12,7 @@ router.get('/', async (req: Request, res: Response, next: NextFunction) => {
       { 'chain': chain },
     ],
   }
-  const records = await storage.find(query)
+  const records = await (await storage.find(query, { sort: { 'date': -1 } }))
 
   res.send(records)
 })
