@@ -198,6 +198,9 @@ export async function runCrawlers (provider, types, storage) {
                     ],
                   }
 
+                  // * If same call hash and call data is present then check if it is executed or cancelled, if so:
+                  // * then only add created call and don't prevent adding duplicate
+
                   const response = await storage.find(
                     preventDuplicateQuery
                   )
