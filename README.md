@@ -2,23 +2,19 @@
 
 This project serves as backend for Subscan Multi Signature Wallet you can find the frontend [here](https://github.com/itering/subscan-multisig-ui), which can be used to work with MultiSig Wallets
 
-<!-- Define the URL websocket for the parachain as environment variables or simply save it in a `.env` file inside the main folder:
-
-``` 
-NETWORK = 'polkadot' # For Polkadot, kusama for Kusama etc.
-``` -->
-
-## Pre-requisites
-
-TBD
-
 ## Getting Started
 
 Clone this repo ```git clone https://github.com/nblogist/subscan-multisig-backend.git```
 
 ### Installing
 
-To successfully run the backend:
+To successfully run the backend locally:
+
+Set MONGODB_URI in env:
+
+```
+export MONGODB_URI=mongodb://<host>:<port>/multisig
+```
 
 Install dependencies using ```yarn```
 
@@ -31,7 +27,9 @@ Run the app in the development mode
 ```
 yarn start:dev
 ```
-Open [http://localhost:9000](http://localhost:9000) to view it in the browser.
+If subscribed multisigs, Open `http://localhost:9000/calls?chain=<name>&multisig_address=<address>`  to view result in the browser.
+
+Chain name: `Polkadot`, `Kusama`, `Darwinia`, `DarwiniaCrab`...
 
 To build the app for production:
 ```
@@ -68,3 +66,7 @@ Please submit pull requests to us using the format described while making a pull
 * **Furqan Ahmed** - [Contact](https://furqan.me)
 
 See also the list of [contributors](https://github.com/nblogist/subscan-multisig-backend/contributors) who participated in this project.
+
+```
+
+```
