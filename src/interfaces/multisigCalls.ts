@@ -6,6 +6,6 @@ export interface multisig_calls {
     approvals: string[];
     depositor: string;
     deposit: string;
-    when: any;
+    when: string;
     chain: string;
 }

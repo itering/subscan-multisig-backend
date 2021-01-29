@@ -34,10 +34,7 @@ describe('Storage', () => {
       ],
       depositor: '5F1TfEbDcroBCH2yWVYKNVGNhJBGvAZ27njRCMApnFHfUkrS',
       deposit: '',
-      when: {
-        'height': '3,519,383',
-        'index': '2'
-      },
+      when: '3519383-2',
       chain: 'DarwiniaCrab'
     }
     storage.insert(fakepayload)
