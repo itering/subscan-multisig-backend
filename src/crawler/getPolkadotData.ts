@@ -20,7 +20,7 @@ export async function runCrawlers (provider, types, storage) {
     `You are connected to chain ${chain} using ${nodeName} v${nodeVersion}`
   )
 
-  await api.rpc.chain.subscribeFinalizedHeads(async (header) => {
+  await api.rpc.chain.subscribeNewHeads(async (header) => {
     console.log(`${chain} is at block: #${header.number}`)
 
     const chain_name = String(chain).replace(/\s/g, '')
