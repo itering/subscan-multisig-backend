@@ -28,28 +28,30 @@ export async function runCrawlers (provider, types, storage) {
   })
 }
 
-async function processBlock(chain, api, storage, blockNumber) {
+export async function processBlock(chain, api, storage, blockNumber) {
   const blockHash = await api.rpc.chain.getBlockHash(
     (blockNumber as unknown) as number
   )
 
   const blockData = await api.derive.chain.getBlock(blockHash)
 
-  blockData?.extrinsics.forEach(async (rawEx, i) => {
+  for(let i = 0; i < blockData?.extrinsics.length; i++) {
+    const rawEx = blockData.extrinsics[i]
     if(rawEx.extrinsic.method.section == 'multisig') {
       const exTimepoint = `${blockNumber}-${i}`
       const ex = rawEx.extrinsic.toHuman().method
       const events = rawEx.events
 
       if(ex.section == 'multisig') {
-        events.forEach(async (event) => {
+        for(let j = 0; j < events.length; j++) {
+          const event = events[j]
           if(event.section == 'multisig') {
             await onEvent(chain, storage, ex, exTimepoint, event.toHuman())
           }
-        })
+        }
       }
     }
-  })
+  }
 }
 
 async function onEvent(chain, storage, ex, exTimepoint, event) {

@@ -22,6 +22,7 @@ describe('Storage', () => {
   it('should create', () => {
     expect(instance).toBeTruthy()
   })
+
   it('should create', async () => {
     fakepayload = {
       multisig_address: '5Hb3obCBk9Jy7fWhPrTQJzbtx9Pnfv2QpwHYsWSHHXxCSKxA',
