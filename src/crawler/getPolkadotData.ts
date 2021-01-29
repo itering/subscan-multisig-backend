@@ -1,6 +1,5 @@
 /* eslint-disable eqeqeq */
-import { ApiPromise, WsProvider } from '@polkadot/api'
-import { blake2AsHex } from '@polkadot/util-crypto'
+import { ApiPromise } from '@polkadot/api'
 import { config } from 'dotenv'
 import { multisig_calls } from '../interfaces/multisigCalls'
 config()
@@ -18,203 +17,168 @@ export async function runCrawlers (provider, types, storage) {
   ])
 
   console.log(
-        `You are connected to chain ${chain} using ${nodeName} v${nodeVersion}`
+    `You are connected to chain ${chain} using ${nodeName} v${nodeVersion}`
   )
-  await api.rpc.chain.subscribeNewHeads(async (header) => {
+
+  await api.rpc.chain.subscribeFinalizedHeads(async (header) => {
     console.log(`${chain} is at block: #${header.number}`)
-    const blockHash = await api.rpc.chain.getBlockHash(
-            (header.number as unknown) as number
-    )
-    console.log(`Block Number is ${header.number}`)
 
-    const blockData = await api.derive.chain.getBlock(blockHash)
-    const filteredData = blockData?.extrinsics.filter((ex) => {
-      return ex.extrinsic.method.section == 'multisig'
-    })
-
-    filteredData &&
-            filteredData.map(async (_datumPair) => {
-              _datumPair.events.map(async (event) => {
-                if (event.section == 'multisig') {
-                  const payload: multisig_calls = {} as multisig_calls
-
-                  payload.multisig_address =
-                            event.method == 'NewMultisig'
-                              ? event.data[1].toHuman()?.toString()!
-                              : event.data[2].toHuman()?.toString()!
-
-                  payload.call_hash =
-                            _datumPair.extrinsic.method.method == 'asMulti'
-                              ? blake2AsHex(
-                                      _datumPair.extrinsic.method.args[3]
-                                        .toHuman()
-                                        ?.toString()!
-                                )
-                              : _datumPair.extrinsic.method.args[3]
-                                .toHuman()
-                                ?.toString()!
-                  //* only as_multi will have actual call_data other calls will only have the call_hash
-                  //* for final approval we send full call data instead of the hash
-
-                  payload.call_data =
-                            _datumPair.extrinsic.method.method == 'asMulti'
-                              ? _datumPair.extrinsic.method.args[3]
-                                .toHuman()
-                                ?.toString()!
-                              : ((await storage.find({
-                                  call_hash: _datumPair.extrinsic.method.args[3]
-                                    .toHuman()
-                                    ?.toString()!,
-                                })) as Array<any>)[0]?.call_data
-                  // *We don't get call_data until the final approval call (as_multi),
-                  // *so I think the call_data for other calls would be empty.
-                  // *but in case we had a call_data in DB before from some other final call of
-                  // *as_multi then we'd have its data and we'd add it here.
-
-                  payload.status =
-                            event.method == 'NewMultisig' &&
-                            (_datumPair.extrinsic.method.method ==
-                                'approveAsMulti' ||
-                                _datumPair.extrinsic.method.method == 'asMulti')
-                              ? 'created'
-                              : event.method == 'MultisigApproval' &&
-                                  _datumPair.extrinsic.method.method ==
-                                      'approveAsMulti'
-                                ? 'approving'
-                                : event.method == 'MultisigExecuted' &&
-                                  _datumPair.extrinsic.method.method ==
-                                      'asMulti'
-                                  ? 'executed'
-                                  : event.method == 'MultisigCancelled' &&
-                                  _datumPair.extrinsic.method.method ==
-                                      'cancelAsMulti'
-                                    ? 'cancelled'
-                                    : ''
-
-                  // payload.approvals
-                  if (
-                    event.method == 'NewMultisig' &&
-                            (_datumPair.extrinsic.method.method ==
-                                'approveAsMulti' ||
-                                _datumPair.extrinsic.method.method == 'asMulti')
-                  ) {
-                    payload.approvals = [
-                                event.data[0].toHuman()?.toString()!,
-                    ]
-                  } else {
-                    let multisig_addressIndex = 2
-                    let call_hash = _datumPair.extrinsic.method.args[3]
-                      .toHuman()
-                      ?.toString()!
-                    if (event.method == 'NewMultisig') {
-                      multisig_addressIndex = 1
-                    }
-                    if (
-                      _datumPair.extrinsic.method.method == 'asMulti'
-                    ) {
-                      call_hash = blake2AsHex(call_hash)
-                    }
-
-                    let temparray = (await storage.find({
-                      $and: [
-                        {
-                          multisig_address: event.data[
-                            multisig_addressIndex
-                          ]
-                            .toHuman()
-                            ?.toString()!,
-                        },
-                        { call_hash: call_hash },
-                      ],
-                    })) as Array<any>
-                    temparray =
-                                temparray[temparray.length - 1]?.approvals
-
-                    if (
-                      temparray &&
-                                event.method != 'MultisigCancelled'
-                    ) {
-                      temparray?.push(
-                                    event.data[0].toHuman()?.toString()!
-                      )
-                    }
-                    payload.approvals = temparray
-                  }
-
-                  // depositor
-                  if (
-                    event.method == 'NewMultisig' &&
-                            (_datumPair.extrinsic.method.method ==
-                                'approveAsMulti' ||
-                                _datumPair.extrinsic.method.method == 'asMulti')
-                  ) {
-                    payload.depositor = event.data[0]
-                      .toHuman()
-                      ?.toString()!
-                  } else {
-                    let multisig_addressIndex = 2
-                    let call_hash = _datumPair.extrinsic.method.args[3]
-                      .toHuman()
-                      ?.toString()!
-                    if (event.method == 'NewMultisig') {
-                      multisig_addressIndex = 1
-                    }
-                    if (
-                      _datumPair.extrinsic.method.method == 'asMulti'
-                    ) {
-                      call_hash = blake2AsHex(call_hash)
-                    }
-
-                    payload.depositor = ((await storage.find({
-                      $and: [
-                        {
-                          multisig_address: event.data[
-                            multisig_addressIndex
-                          ]
-                            .toHuman()
-                            ?.toString()!,
-                        },
-                        { call_hash: call_hash },
-                      ],
-                    })) as Array<any>)[0]?.approvals?.[0]
-                  } //* getting depositor from the first element of the approvals array if its not a NewMultisig
-
-                  payload.deposit = '' //! Leaving it out for now
-
-                  payload.when = _datumPair.extrinsic.method.args[2].toHuman()
-                  //* if this is the first approval, then this will be `None`
-                  payload.chain = String(chain).replace(/\s/g, '')
-                  const preventDuplicateQuery = {
-                    $and: [
-                      { 'multisig_address': payload.multisig_address },
-                      { 'call_hash': payload.call_hash },
-                      { 'call_data': payload.call_data },
-                      { 'status': payload.status },
-                      { 'approvals': payload.approvals },
-                      { 'depositor': payload.depositor },
-                      { 'deposit': payload.deposit },
-                      { 'when': payload.when },
-                      { 'chain': payload.chain },
-                    ],
-                  }
-
-                  // * If same call hash and call data is present then check if it is executed or cancelled, if so:
-                  // * then only add created call and don't prevent adding duplicate
-
-                  const response = await storage.find(
-                    preventDuplicateQuery
-                  )
-
-                  if (response.length == 0) {
-                    console.log('Saving in DB: ', payload)
-                    storage.update(
-                      payload,
-                      { '$currentDate': { 'date': { '$type': 'date' } } },
-                      { upsert: true }
-                    )
-                  }
-                }
-              })
-            })
+    const chain_name = String(chain).replace(/\s/g, '')
+    processBlock(chain_name, api, storage, header.number)
   })
+}
+
+async function processBlock(chain, api, storage, blockNumber) {
+  const blockHash = await api.rpc.chain.getBlockHash(
+    (blockNumber as unknown) as number
+  )
+
+  const blockData = await api.derive.chain.getBlock(blockHash)
+
+  blockData?.extrinsics.forEach(async (rawEx, i) => {
+    if(rawEx.extrinsic.method.section == 'multisig') {
+      const exTimepoint = `${blockNumber}-${i}`
+      const ex = rawEx.extrinsic.toHuman().method
+      const events = rawEx.events
+
+      if(ex.section == 'multisig') {
+        events.forEach(async (event) => {
+          if(event.section == 'multisig') {
+            await onEvent(chain, storage, ex, exTimepoint, event.toHuman())
+          }
+        })
+      }
+    }
+  })
+}
+
+async function onEvent(chain, storage, ex, exTimepoint, event) {
+  console.log(`ex: ${exTimepoint}, event: ${event.method}`)
+  if(event.method == 'NewMultisig') {
+    await onNewMultisig(chain, storage, ex, exTimepoint, event.data)
+  } else if(event.method == 'MultisigApproval') {
+    await onMultisigApproval(chain, storage, ex, exTimepoint, event.data)
+  } else if(event.method == 'MultisigExecuted') {
+    await onMultisigExecuted(chain, storage, ex, exTimepoint, event.data)
+  } else if(event.method == 'MultisigCancelled') {
+    await onMultisigCancelled(chain, storage, ex, exTimepoint, event.data)
+  }  else {
+    console.error(`Unsupported multisig event: ${event.method}`)
+  }
+}
+
+// data: approving, multisig, call_hash
+async function onNewMultisig(chain, storage, ex, exTimepoint, data) {
+  const approving = data[0]
+  const multisig_address = data[1]
+  const callHash = data[2]
+
+  // find the multisig from db
+  const not_exists = await storage.findOne({
+    when: exTimepoint,
+    multisig_address: multisig_address,
+    call_hash: callHash
+  }) == null
+
+  if(not_exists) {
+    // create a new multisig call
+    const multisig: multisig_calls = {} as multisig_calls
+    multisig.multisig_address = multisig_address
+    multisig.call_hash = callHash
+    multisig.chain = chain
+    multisig.call_data = ex.method == 'asMulti' ? ex.args[3] : null
+    multisig.depositor = approving
+    multisig.approvals = [approving]
+    multisig.status = 'approving'
+    multisig.when = exTimepoint
+
+    // insert into db
+    await storage.insert(multisig)
+  }
+}
+
+// data: approving, timepoint, multisig, call_hash
+async function onMultisigApproval(chain, storage, ex, exTimepoint, data) {
+  const approving = data[0]
+  const timepoint = buildTimepoint(data[1])
+  const multisig_address = data[2]
+  const callHash = data[3]
+
+  // find the multisig from db
+  const multisig = await storage.findOne({
+    when: timepoint,
+    multisig_address: multisig_address,
+    call_hash: callHash
+  })
+
+  // if not exists, it should be in previous unscribed block, so skip it
+  if(multisig != null) {
+    // update the multisig
+    multisig.approvals.push(approving)
+    await storage.update({
+      when: timepoint,
+      multisig_address: multisig_address,
+      call_hash: callHash
+    },{
+      $set: {
+        approvals: multisig.approvals,
+        call_data: multisig.call_data || (ex.method == 'asMulti' ? ex.args[3] : null)
+      }
+    })
+  }
+}
+
+// data: approving, timepoint, multisig, call_hash
+async function onMultisigExecuted(chain, storage, ex, exTimepoint, data) {
+  const approving = data[0]
+  const timepoint = buildTimepoint(data[1])
+  const multisig_address = data[2]
+  const callHash = data[3]
+
+  // find the multisig from db
+  const multisig = await storage.findOne({
+    when: timepoint,
+    multisig_address: multisig_address,
+    call_hash: callHash
+  })
+
+  // if not exists, it should be in previous unscribed block, so skip it
+  if(multisig != null) {
+    // update the multisig
+    multisig.approvals.push(approving)
+    await storage.update({
+      when: timepoint,
+      multisig_address: multisig_address,
+      call_hash: callHash
+    },{
+      $set: {
+        approvals: multisig.approvals,
+        call_data: multisig.call_data || (ex.method == 'asMulti' ? ex.args[3] : null),
+        status: 'executed'
+      }
+    })
+  }
+}
+
+// data: cancelling, timepoint, multisig, call_hash
+async function onMultisigCancelled(chain, storage, ex, exTimepoint, data) {
+  const _cancelling = data[0]
+  const timepoint = buildTimepoint(data[1])
+  const multisig_address = data[2]
+  const callHash = data[3]
+
+  // update the multisig. what will happen if not exists?
+  await storage.update({
+    when: timepoint,
+    multisig_address: multisig_address,
+    call_hash: callHash
+  },{
+    $set: {
+      status: 'cancelled'
+    }
+  })
+}
+
+function buildTimepoint(data) {
+  return `${parseInt(data.height.replace(/,/g, ''))}-${parseInt(data.index.replace(/,/g, ''))}`
 }
